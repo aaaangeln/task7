@@ -1,0 +1,104 @@
+﻿@model te.Models.TicTacToeModel
+
+<h1>Tic-Tac-Toe</h1>
+
+<div id="gameBoard">
+    @for (int row = 0; row < 3; row++)
+    {
+        <div class="row">
+            @for (int col = 0; col < 3; col++)
+            {
+                <div class="cell">
+                    <button id="cell-@row-@col" onclick="makeMove(@row, @col)" disabled>@Model.Board[row, col]</button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<div id="winMessage" style="display: none;">
+    @if (!string.IsNullOrEmpty(Model.Winner))
+    {
+        if (Model.Winner == "Draw")
+        {
+            <p>Ничья!</p>
+        }
+        else
+        {
+            <p>Победил игрок @Model.Winner!</p>
+        }
+    }
+</div>
+
+<style>
+    .row {
+        display: flex;
+    }
+
+    .cell {
+        width: 50px;
+        height: 50px;
+        border: 1px solid black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<div id="winMessage" style="display: none;">
+    @if (!string.IsNullOrEmpty(Model.Winner))
+    {
+        if (Model.Winner == "Draw")
+        {
+            <p>Ничья!</p>
+        }
+        else
+        {
+            <p>Победил игрок @Model.Winner!</p>
+        }
+    }
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+<script>
+    var connection = new signalR.HubConnectionBuilder().withUrl("/chat").build();
+    connection.invoke("MakeMove", row, col)
+
+    connection.on("UpdateGame", function (model) {
+        updateGame(model);
+    });
+
+    connection.start().then(function () {
+        console.log("SignalR Connected.");
+    }).catch(function (err) {
+        return console.error(err.toString());
+    });
+
+    function makeMove(row, col) {
+        var button = document.getElementById("cell-" + row + "-" + col);
+        if (button.innerText === "" && button.disabled === false) {
+            button.disabled = true;
+
+            connection.invoke("MakeMove", row, col)
+                .catch(function (err) {
+                    console.error(err.toString());
+                });
+        }
+    }
+
+    function updateGame(model) {
+        for (var row = 0; row < 3; row++) {
+            for (var col = 0; col < 3; col++) {
+                var button = document.getElementById("cell-" + row + "-" + col);
+                button.innerText = model.Board[row, col];
+                button.disabled = (model.CurrentPlayer === "" || button.innerText !== "");
+            }
+        }
+
+        var winMessage = document.getElementById("winMessage");
+        if (model.Winner !== "") {
+            winMessage.style.display = "block";
+        } else {
+            winMessage.style.display = "none";
+        }
+    }</script>
